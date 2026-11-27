@@ -42,7 +42,7 @@ export default async function AuthLayout({
             <div>
               <h1 className="sr-only">{branding.name}</h1>
               <p className="text-sm text-text-3">
-                {productName([...enabledChannels()])} con agente de IA
+                {productName([...enabledChannels()])} con agente de IA · Hecho en Perú
               </p>
             </div>
           )}

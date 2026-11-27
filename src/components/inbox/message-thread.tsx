@@ -201,7 +201,7 @@ function dayLabel(iso: string): string {
   const yesterday = new Date(today.getTime() - 86400000);
   if (d.toDateString() === today.toDateString()) return "Hoy";
   if (d.toDateString() === yesterday.toDateString()) return "Ayer";
-  return d.toLocaleDateString("es-MX", { day: "numeric", month: "long" });
+  return d.toLocaleDateString("es-PE", { day: "numeric", month: "long" });
 }
 
 /**
@@ -370,7 +370,7 @@ type Intercalado =
   | ({ clase: "evento" } & EventoHiloDto);
 
 function bubbleTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("es-MX", {
+  return new Date(iso).toLocaleTimeString("es-PE", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,

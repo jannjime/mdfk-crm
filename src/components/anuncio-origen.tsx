@@ -56,7 +56,7 @@ export function AnuncioOrigen({ anuncio }: { anuncio: AnuncioDto }) {
   const [imagenRota, setImagenRota] = useState(false);
   const etiqueta = etiquetaDeOrigen(anuncio.sourceType);
   const titular = titularDeOrigen(anuncio.headline, anuncio.sourceType);
-  const fecha = new Date(anuncio.capturedAt).toLocaleDateString("es-MX", {
+  const fecha = new Date(anuncio.capturedAt).toLocaleDateString("es-PE", {
     day: "numeric",
     month: "short",
     year: "numeric",

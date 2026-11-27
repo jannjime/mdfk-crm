@@ -318,7 +318,7 @@ function HistoryList({
             )}
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {new Date(run.startedAt).toLocaleString("es-MX", {
+            {new Date(run.startedAt).toLocaleString("es-PE", {
               day: "numeric",
               month: "short",
               hour: "2-digit",

@@ -1,3 +1,15 @@
+# MDFK CRM — por IA Perú MDFK
+
+CRM de WhatsApp con agente de IA, adaptado para negocios peruanos: soles (S/),
+hora de Lima, formato es-PE y la identidad de IA Perú MDFK (cian neón sobre
+azul noche, con rojo Perú como acento alterno).
+
+Basado en [Vocero CRM](https://github.com/kevinrivm/vocero-crm) de Kevin Belier,
+publicado con licencia MIT (ver `LICENSE`, que se conserva como exige la licencia).
+Para traer mejoras del proyecto original: `git fetch upstream && git merge upstream/main`.
+
+---
+
 # Vocero CRM
 
 [![CI](https://github.com/kevinrivm/vocero-crm/actions/workflows/ci.yml/badge.svg)](https://github.com/kevinrivm/vocero-crm/actions/workflows/ci.yml)

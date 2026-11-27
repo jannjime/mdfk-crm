@@ -40,7 +40,7 @@ export type BoardLead = {
 
 export function PipelineClient() {
   const [stages, setStages] = useState<StageDto[]>([]);
-  const [currency, setCurrency] = useState("MXN");
+  const [currency, setCurrency] = useState("PEN");
   const [leads, setLeads] = useState<BoardLead[]>([]);
   const [activeLead, setActiveLead] = useState<BoardLead | null>(null);
   const [managing, setManaging] = useState(false);

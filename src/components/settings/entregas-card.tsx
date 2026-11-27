@@ -16,7 +16,7 @@ type Entregas = {
 const REFRESCO_MS = 15_000;
 
 function hora(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", {
+  return new Date(iso).toLocaleString("es-PE", {
     day: "numeric",
     month: "short",
     hour: "2-digit",

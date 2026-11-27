@@ -66,7 +66,7 @@ function hace(iso: string, now: number): string {
 }
 
 function fecha(iso: string): string {
-  return new Date(iso).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString("es-PE", { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function ChannelsClient() {

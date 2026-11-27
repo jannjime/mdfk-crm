@@ -192,7 +192,7 @@ export function SalesSection({
           {data.completeFrom && (
             <p className="text-[11px] text-text-3">
               Los tiempos usan movimientos registrados desde el{" "}
-              {new Date(data.completeFrom).toLocaleDateString("es-MX", {
+              {new Date(data.completeFrom).toLocaleDateString("es-PE", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",

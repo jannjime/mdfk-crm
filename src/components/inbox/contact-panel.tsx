@@ -48,7 +48,7 @@ function textoPausaHasta(iso: string | null): string {
   if (!iso) return "En pausa";
   const fin = new Date(iso);
   if (fin.getTime() <= Date.now()) return "En pausa · vuelve cuando el cliente escriba";
-  const hora = fin.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const hora = fin.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false });
   const mismoDia = fin.toDateString() === new Date().toDateString();
   return mismoDia ? `En pausa hasta las ${hora}` : `En pausa hasta mañana, ${hora}`;
 }

@@ -40,7 +40,7 @@ const PERMISOS: { scope: Scope; titulo: string; detalle: string }[] = [
 
 function fecha(iso: string | null) {
   if (!iso) return "nunca";
-  return new Date(iso).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString("es-PE", { dateStyle: "medium", timeStyle: "short" });
 }
 
 /**

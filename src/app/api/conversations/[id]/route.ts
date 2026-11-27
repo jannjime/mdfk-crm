@@ -46,7 +46,7 @@ export const PATCH = withAuth(async (session, req: Request, ctx: Params) => {
   return Response.json({ conversation: null });
 });
 
-const FECHA_DE_CITA = new Intl.DateTimeFormat("es-MX", { dateStyle: "long" });
+const FECHA_DE_CITA = new Intl.DateTimeFormat("es-PE", { dateStyle: "long" });
 
 /**
  * 026 — Elimina la conversación y le pide al cerebro que la olvide.

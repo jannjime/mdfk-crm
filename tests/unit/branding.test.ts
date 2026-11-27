@@ -63,18 +63,18 @@ describe("white-label: acento", () => {
     expect(lum).toBeLessThan(0xd0);
   });
 
-  it("hex inválido cae al default (el azul Vocero)", () => {
-    expect(resolveAccentSet("rojo")).toEqual(ACCENT_PRESETS["#0d5bff"]!.set);
+  it("hex inválido cae al default (el cian MDFK)", () => {
+    expect(resolveAccentSet("rojo")).toEqual(ACCENT_PRESETS["#0e7490"]!.set);
   });
 
-  it("el azul Vocero es el default y trae los valores exactos de la landing", () => {
-    expect(DEFAULT_BRANDING.accent).toBe("#0d5bff");
+  it("el cian MDFK es el default y trae los valores exactos del preset", () => {
+    expect(DEFAULT_BRANDING.accent).toBe("#0e7490");
     expect(resolveAccentSet(DEFAULT_BRANDING.accent)).toEqual({
-      accent: "#0d5bff",
-      hover: "#0a4de6",
-      soft: "#d3e2ff",
-      tint: "#ebf1ff",
-      text: "#0038d8",
+      accent: "#0e7490",
+      hover: "#155e75",
+      soft: "#cff1f8",
+      tint: "#ecfbfe",
+      text: "#164e63",
       fg: "#ffffff",
     });
   });
@@ -109,7 +109,7 @@ describe("white-label: acento en tema oscuro", () => {
 
   it("hex inválido en oscuro también cae al acento por defecto", () => {
     expect(resolveAccentSet("rojo", "dark")).toEqual(
-      resolveAccentSet("#0d5bff", "dark")
+      resolveAccentSet("#0e7490", "dark")
     );
   });
 
@@ -146,16 +146,16 @@ describe("white-label: barra lateral bicolor (.nav-dark)", () => {
     expect(nav).not.toContain(resolveAccentSet("#3f5972", "light").accent);
   });
 
-  it("con el azul Vocero, la barra se ve como siempre", () => {
+  it("con el cian MDFK, la barra trae su receta fija", () => {
     // La receta de la barra es la de antes: el ítem activo del tema claro no
     // cambia aunque el tema oscuro de la página sí.
     expect(resolveNavAccentSet(DEFAULT_BRANDING.accent)).toEqual({
-      accent: "#256bff",
-      hover: "#4883ff",
-      soft: "#122c63",
-      tint: "#0e1e41",
-      text: "#6295ff",
-      fg: "#ffffff",
+      accent: "#3c8ea5",
+      hover: "#5ba0b3",
+      soft: "#19364a",
+      tint: "#112236",
+      text: "#72aebe",
+      fg: "#0f1419",
     });
   });
 
@@ -209,14 +209,14 @@ describe("tema oscuro: las superficies se distinguen", () => {
 });
 
 describe("white-label: normalización", () => {
-  it("nombre vacío o nulo → default 'Vocero'; se recorta a 30", () => {
-    expect(normalizeBranding(null).name).toBe("Vocero");
-    expect(normalizeBranding({ name: "   " }).name).toBe("Vocero");
+  it("nombre vacío o nulo → default 'MDFK CRM'; se recorta a 30", () => {
+    expect(normalizeBranding(null).name).toBe("MDFK CRM");
+    expect(normalizeBranding({ name: "   " }).name).toBe("MDFK CRM");
     expect(normalizeBranding({ name: "x".repeat(50) }).name).toHaveLength(30);
   });
 
   it("acento inválido → default", () => {
-    expect(normalizeBranding({ accent: "azul" }).accent).toBe("#0d5bff");
+    expect(normalizeBranding({ accent: "azul" }).accent).toBe("#0e7490");
     expect(normalizeBranding({ accent: "#3F6B66" }).accent).toBe("#3f6b66");
   });
 });

@@ -65,7 +65,7 @@ export const CURRENCIES = CURRENCY_OPTIONS.map((c) => c.code) as [
   ...Currency[],
 ];
 
-export const DEFAULT_CURRENCY: Currency = "MXN";
+export const DEFAULT_CURRENCY: Currency = "PEN";
 
 export function isCurrency(v: unknown): v is Currency {
   return typeof v === "string" && (CURRENCIES as readonly string[]).includes(v);
@@ -89,7 +89,7 @@ export function sumable(
 export function formatMoneyCents(
   cents: number | null | undefined,
   currency: string,
-  locale = "es-MX"
+  locale = "es-PE"
 ): string | null {
   if (cents === null || cents === undefined) return null;
   try {

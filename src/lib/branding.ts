@@ -45,10 +45,10 @@ export type Branding = {
 };
 
 export const DEFAULT_BRANDING: Branding = {
-  name: "Vocero",
-  // El azul eléctrico de vocerocrm.com: la instancia recién instalada se ve
-  // igual que la landing. Una agencia lo cambia en Configuración → Marca.
-  accent: "#0d5bff",
+  name: "MDFK CRM",
+  // El cian neón del logo de IA Perú MDFK (los ojos de la llama). Cada
+  // cliente lo cambia en Configuración → Marca.
+  accent: "#0e7490",
   currency: DEFAULT_CURRENCY,
   favicon: null,
 };
@@ -59,6 +59,14 @@ export const DEFAULT_BRANDING: Branding = {
  * quien quiera un CRM más discreto.
  */
 export const ACCENT_PRESETS: Record<string, { label: string; set: AccentSet }> = {
+  "#0e7490": {
+    label: "Cian MDFK",
+    set: { accent: "#0e7490", hover: "#155e75", soft: "#cff1f8", tint: "#ecfbfe", text: "#164e63", fg: "#ffffff" },
+  },
+  "#c8102e": {
+    label: "Rojo Perú",
+    set: { accent: "#c8102e", hover: "#a50d26", soft: "#f8d3d9", tint: "#fdeff1", text: "#8a0b20", fg: "#ffffff" },
+  },
   "#0d5bff": {
     label: "Azul Vocero",
     set: { accent: "#0d5bff", hover: "#0a4de6", soft: "#d3e2ff", tint: "#ebf1ff", text: "#0038d8", fg: "#ffffff" },
