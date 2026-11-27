@@ -68,7 +68,7 @@ export const ACCENT_PRESETS: Record<string, { label: string; set: AccentSet }> =
     set: { accent: "#c8102e", hover: "#a50d26", soft: "#f8d3d9", tint: "#fdeff1", text: "#8a0b20", fg: "#ffffff" },
   },
   "#0d5bff": {
-    label: "Azul Vocero",
+    label: "Azul eléctrico",
     set: { accent: "#0d5bff", hover: "#0a4de6", soft: "#d3e2ff", tint: "#ebf1ff", text: "#0038d8", fg: "#ffffff" },
   },
   "#3f5972": {

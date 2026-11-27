@@ -27,7 +27,7 @@ export function origenPublico(): string {
 export function enlacesOpenRouter(origen: string): Enlace[] {
   return [
     { titulo: "Crear la llave en OpenRouter (Keys → Create key)", url: OPENROUTER.llaves },
-    { titulo: "Cargar saldo en OpenRouter (el consumo se cobra ahí, aparte de Vocero)", url: OPENROUTER.saldo },
+    { titulo: "Cargar saldo en OpenRouter (el consumo se cobra ahí, aparte del CRM)", url: OPENROUTER.saldo },
     { titulo: "Pegar la llave en el CRM: Ajustes → IA (o con save_ai_key)", url: `${origen}/settings/ai` },
   ];
 }

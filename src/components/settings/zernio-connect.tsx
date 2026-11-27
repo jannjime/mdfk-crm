@@ -169,7 +169,7 @@ export function ZernioConnect({
           {saved.webhook?.ok && (
             <p className="text-success-text opacity-80">
               {saved.webhook.created
-                ? "Vocero dio de alta su webhook en tu Zernio, limitado a tus cuentas conectadas."
+                ? "El CRM dio de alta su webhook en tu Zernio, limitado a tus cuentas conectadas."
                 : "El webhook de tu Zernio quedó actualizado y limitado a tus cuentas conectadas."}
             </p>
           )}

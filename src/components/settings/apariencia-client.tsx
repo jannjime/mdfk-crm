@@ -234,7 +234,7 @@ export function AparienciaClient({
             ? "Tus cambios se guardan solos, solo para ti y en este equipo."
             : delNegocio
               ? "Estás viendo la apariencia del equipo. Lo que cambies se guarda solo para ti."
-              : "Estás viendo la apariencia de siempre de Vocero. Lo que cambies se guarda solo para ti."}
+              : "Estás viendo la apariencia de siempre del CRM. Lo que cambies se guarda solo para ti."}
         </p>
         <div className="flex flex-wrap gap-2">
           {/* Solo dueño y administradores: lo ven todos los que no eligieron la suya. */}

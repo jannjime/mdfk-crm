@@ -25,6 +25,7 @@
     "test:e2e:fijar": "node --env-file=.env scripts/e2e-fijar-chats.mjs",
     "test:e2e:sesion": "node --env-file=.env scripts/e2e-sesion.mjs",
     "test:e2e:api-mcp": "node --env-file=.env scripts/e2e-api-mcp.mjs",
+    "test:e2e:rubros": "node --env-file=.env scripts/e2e-rubros.mjs",
     "test:e2e:reacciones": "node --env-file=.env scripts/e2e-reacciones.mjs",
     "test:e2e:no-se-pierda": "node --env-file=.env scripts/e2e-que-no-se-pierda-nada.mjs",
     "test:e2e:una-respuesta": "node --env-file=.env scripts/e2e-una-respuesta.mjs",

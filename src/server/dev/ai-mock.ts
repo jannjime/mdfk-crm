@@ -120,6 +120,28 @@ export function aiMockCompletion(messages: InMessage[]): string {
     return JSON.stringify({ veredicto: "verde", hallazgos: [] });
   }
 
+  // MDFK — Plantilla de «Otros»: una plantilla válida y determinista (un
+  // gimnasio), para conducir el flujo completo sin proveedor real.
+  if (system.includes("consultor experto en ventas por WhatsApp")) {
+    return JSON.stringify({
+      agente: {
+        nombre: "Coach virtual",
+        tono: "Motivador y cercano, tutea.",
+        instrucciones: "1. Pregunta su objetivo (bajar de peso, ganar masa, salud).\n2. Ofrece la clase de prueba.",
+        reglasDeEscalado: "Pasa a una persona ante lesiones o reclamos.",
+        saludo: "¡Hola! 💪 Bienvenido(a) a [COMPLETAR: nombre del gimnasio].",
+      },
+      etapas: ["Nuevo", "Clase de prueba agendada", "Probó la clase"],
+      etapaGanada: "Membresía activa",
+      etapaPerdida: "No se inscribió",
+      conocimiento: [
+        { pregunta: "¿Cuánto cuesta la membresía?", respuesta: "[COMPLETAR: precios mensual y trimestral en soles]" },
+        { pregunta: "¿Tienen clase de prueba?", respuesta: "[COMPLETAR: sí/no y condiciones]" },
+      ],
+      respuestasRapidas: [{ atajo: "prueba", texto: "¡{nombre}, tu clase de prueba quedó agendada! 💪" }],
+    });
+  }
+
   // 036 — Lo demás es un cerebro pensando por `/api/bot/llm`: texto de eco,
   // determinista. El agente que contestaba con acciones JSON ya no existe.
   return `Respuesta de prueba sobre: ${lastUser.slice(0, 80)}`;
