@@ -148,6 +148,26 @@ export const CHANNEL_CAPABILITIES: Record<Channel, ChannelCapabilities> = {
     deliveryReceipts: false,
     quoteReplies: false,
   },
+  /**
+   * 080 — WhatsApp por la sesión web del QR. No hay ventana de 24 h ni
+   * plantillas: es la app del teléfono la que escribe. El formato es el de
+   * WhatsApp. Adjuntos de salida, ubicaciones y citas quedan fuera de esta
+   * entrega: el compositor no los ofrece en lugar de fallar al enviar.
+   */
+  whatsapp_qr: {
+    label: CHANNEL_LABEL.whatsapp_qr,
+    windowMs: null,
+    outsideWindow: "none",
+    humanAgentWindowMs: null,
+    textFormat: "whatsapp",
+    maxTextBytes: null,
+    maxTextChars: 4096,
+    maxOutboundPerWindow: null,
+    outboundMedia: false,
+    structuredMessages: false,
+    deliveryReceipts: false,
+    quoteReplies: false,
+  },
 };
 
 /**

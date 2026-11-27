@@ -1,0 +1,24 @@
+{
+  "name": "mdfk-puente-qr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Puente de WhatsApp por QR para MDFK CRM (sesión web con Baileys, del kit de agente de WhatsApp)",
+  "type": "module",
+  "engines": { "node": ">=20.9.0" },
+  "scripts": {
+    "start": "tsx src/servidor.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "6.7.21",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
+    "tsx": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.7.0"
+  }
+}

@@ -42,6 +42,9 @@ const MARK: Record<Channel, { path: string; tile: string }> = {
   },
   // 022: el negro del icono de TikTok, con el glifo en blanco como los demás.
   tiktok: { path: TIKTOK_PATH, tile: "bg-[#010101]" },
+  // 080: el mismo glifo de WhatsApp en un verde más oscuro: es WhatsApp, pero
+  // por la sesión del QR, y el equipo tiene que distinguirlo de un vistazo.
+  whatsapp_qr: { path: WHATSAPP_PATH, tile: "bg-[#075e54]" },
 };
 
 /**

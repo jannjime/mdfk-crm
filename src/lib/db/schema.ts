@@ -129,7 +129,7 @@ export const contact = pgTable(
      * 014: canal por el que vive este contacto. Aditivo y con default: toda
      * fila existente sigue significando exactamente lo mismo.
      */
-    channel: text("channel", { enum: ["whatsapp", "instagram", "messenger", "tiktok"] })
+    channel: text("channel", { enum: ["whatsapp", "instagram", "messenger", "tiktok", "whatsapp_qr"] })
       .notNull()
       .default("whatsapp"),
     /**
@@ -364,7 +364,7 @@ export const conversation = pgTable(
      * 014: canal de la conversacion. Denormalizado del contacto a proposito:
      * el ruteo de salida y el filtro de la bandeja lo leen en cada mensaje.
      */
-    channel: text("channel", { enum: ["whatsapp", "instagram", "messenger", "tiktok"] })
+    channel: text("channel", { enum: ["whatsapp", "instagram", "messenger", "tiktok", "whatsapp_qr"] })
       .notNull()
       .default("whatsapp"),
     /**
@@ -689,6 +689,35 @@ export const messengerCredentials = pgTable(
     index("messenger_credentials_account_ref_idx").on(t.accountRef),
   ]
 );
+
+/**
+ * 080 — El número de WhatsApp conectado por QR (sesión web en el puente).
+ *
+ * No guarda ningún secreto: la sesión de WhatsApp vive en el volumen del
+ * puente, no en el CRM, y el puente se autentica con `BOT_API_KEY`. La fila
+ * dice qué organización es dueña de la sesión (el puente la repite en cada
+ * evento como `sesion`) y el último estado que el puente informó, para que la
+ * bandeja y la guía no tengan que preguntarle al puente en cada pantalla.
+ */
+export const whatsappQrConnection = pgTable("whatsapp_qr_connection", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  status: text("status", {
+    enum: ["desconectado", "esperando_qr", "conectado"],
+  })
+    .notNull()
+    .default("desconectado"),
+  /** El número vinculado, en dígitos. null hasta que se escanea el QR. */
+  phone: text("phone"),
+  /** El nombre del perfil de WhatsApp del número vinculado. */
+  profileName: text("profile_name"),
+  connectedAt: timestamp("connected_at"),
+  /** Último aviso del puente (entrante o estado): su señal de vida. */
+  lastSeenAt: timestamp("last_seen_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
 
 /**
  * 022 — Credenciales del canal de TikTok.
@@ -1389,7 +1418,7 @@ export const webhookEvent = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     /** Quién lo procesa: el adaptador del canal y la fuente. */
     fuente: text("fuente", {
-      enum: ["whatsapp", "meta_instagram", "meta_messenger", "zernio"],
+      enum: ["whatsapp", "meta_instagram", "meta_messenger", "zernio", "whatsapp_qr"],
     }).notNull(),
     payload: jsonb("payload").notNull(),
     /** SHA-256 del cuerpo crudo: la misma entrega dos veces es una fila. */

@@ -85,6 +85,7 @@ describe("a qué organización va cada evento", () => {
     porIgUserId: org("IG1"),
     porPageId: org("PAGE1"),
     porCuentaZernio: async () => ({ organizationId: "org_z" }),
+    porSesionQr: org("org_a"),
   };
 
   it("WhatsApp por phone_number_id, y por WABA para los estados de plantillas", async () => {
@@ -109,6 +110,10 @@ describe("a qué organización va cada evento", () => {
     };
     expect(await real("meta_messenger", pagina, b)).toBe("org_a");
     expect(await real("zernio", { account: { id: "acc" } }, b)).toBe("org_z");
+    // 080: la sesión del puente QR es la organización; sin fila, nadie.
+    expect(await real("whatsapp_qr", { sesion: "org_a", tipo: "mensaje" }, b)).toBe("org_a");
+    expect(await real("whatsapp_qr", { sesion: "otra", tipo: "mensaje" }, b)).toBeNull();
+    expect(await real("whatsapp_qr", { tipo: "mensaje" }, b)).toBeNull();
     expect(await real("meta_instagram", { entry: [{ id: "otro" }] }, b)).toBeNull();
   });
 });

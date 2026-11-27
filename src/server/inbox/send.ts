@@ -25,7 +25,9 @@ import {
   type MessengerCredentials,
 } from "@/server/messenger/credentials";
 import { sendMessengerText } from "@/server/messenger/send";
-import { TT_PREFIX } from "@/server/inbox/identity";
+import { TT_PREFIX, QR_IDENTITY_PREFIX } from "@/server/inbox/identity";
+import { conexionQr } from "@/server/whatsapp-qr/conexion";
+import { enviarPorPuente, PuenteError } from "@/server/whatsapp-qr/puente";
 import {
   getTiktokCredentialsByOrg,
   markTiktokReconnectRequired,
@@ -104,6 +106,8 @@ type SendTarget = {
   messenger?: MessengerCredentials;
   /** 022: presente solo en conversaciones de TikTok. */
   tiktok?: TiktokCredentials;
+  /** 080: presente solo en conversaciones de WhatsApp por QR (el número del cliente). */
+  qr?: { to: string };
   /**
    * 024: el envío sale con la etiqueta de agente humano. Lo decide el
    * pre-vuelo (`assertReplyWindow`), no cada canal por su cuenta.
@@ -298,6 +302,35 @@ async function prepareSend(
       destinatario: { to: ttRecipient },
       recipient: ttRecipient,
       tiktok: ttCreds,
+    };
+  }
+
+  // 080: WhatsApp por QR. Sale por el puente, sin ventana ni plantillas: el
+  // límite lo pone la sesión del teléfono, no Meta.
+  if (row.conversation.channel === "whatsapp_qr") {
+    if (!isChannelEnabled("whatsapp_qr")) {
+      throw new SendError(
+        "not_connected",
+        "El canal de WhatsApp por QR está desactivado en esta instancia"
+      );
+    }
+    const qr = await conexionQr(organizationId);
+    if (!qr || qr.status !== "conectado") {
+      throw new SendError(
+        "not_connected",
+        "No hay WhatsApp conectado por QR: escanea el código en Configuración → WhatsApp (QR)"
+      );
+    }
+    const qrTo = (row.contact.phone ?? row.contact.waIdentity.slice(QR_IDENTITY_PREFIX.length)).replace(/\D/g, "");
+    if (!qrTo) {
+      throw new SendError("meta_error", "El contacto no tiene número de WhatsApp");
+    }
+    return {
+      conversation: row.conversation,
+      credentials: null,
+      destinatario: { to: qrTo },
+      recipient: qrTo,
+      qr: { to: qrTo },
     };
   }
 
@@ -538,7 +571,9 @@ export async function sendText(input: {
       ? await callMessengerSend(target, text)
       : target.tiktok
         ? await callTiktokSend(target, text)
-        : await enviarPorWhatsappConRespaldo();
+        : target.qr
+          ? await callQrSend(target.qr.to, text)
+          : await enviarPorWhatsappConRespaldo();
 
   const messageId = await persistOutbound({
     organizationId: input.organizationId,
@@ -961,6 +996,25 @@ async function callTiktokSend(target: SendTarget, text: string): Promise<string>
         );
       }
       throw new SendError("meta_error", err.message);
+    }
+    throw err;
+  }
+}
+
+/**
+ * 080 — Envío por el puente de WhatsApp por QR. Un puente caído o sin sesión
+ * es «no disponible», no un rechazo del cliente: el operador ve que hay que
+ * revisar la conexión, y el cerebro lo trata como un fallo de transporte.
+ */
+async function callQrSend(to: string, text: string): Promise<string> {
+  try {
+    return `${QR_IDENTITY_PREFIX}${await enviarPorPuente(to, text)}`;
+  } catch (err) {
+    if (err instanceof PuenteError) {
+      throw new SendError(
+        err.code === "no_configurado" ? "not_connected" : "meta_unavailable",
+        err.message
+      );
     }
     throw err;
   }

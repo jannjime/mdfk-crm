@@ -4,6 +4,7 @@ import { processTemplateStatusValue } from "@/server/whatsapp/template-events";
 import { processMetaInstagramPayload } from "@/server/instagram/ingest";
 import { processMetaPagePayload } from "@/server/messenger/ingest";
 import { processZernioPayload } from "@/server/zernio/dispatch";
+import { processQrPayload } from "@/server/whatsapp-qr/ingest";
 import { lanzarFalloDePrueba } from "@/server/dev/webhook-fallo";
 import type { FuenteWebhook } from "./eventos";
 
@@ -31,6 +32,8 @@ export async function procesarFuente(
       return processMetaPagePayload(payload);
     case "zernio":
       return processZernioPayload(payload);
+    case "whatsapp_qr":
+      return processQrPayload(payload);
   }
 }
 

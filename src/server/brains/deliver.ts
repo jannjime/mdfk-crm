@@ -3,6 +3,7 @@ import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import {
   armarEvento,
+  canalDelEvento,
   capacidadesDelCrm,
   clasificarRespuesta,
   firmarCuerpo,
@@ -258,7 +259,7 @@ export async function construirEvento(
     organization: org,
     conversation: {
       id: conv.id,
-      channel: conv.channel,
+      channel: canalDelEvento(conv.channel),
       aiEnabled: conv.aiEnabled,
       // 022: la ventana es la del canal (48 h en TikTok).
       windowOpen: isWindowOpen(

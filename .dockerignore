@@ -21,3 +21,6 @@ INSTALL-IA.md
 # los *_snapshot.json de meta/ son de `drizzle-kit generate` y pesan ~1.2 MB.
 drizzle/meta/*
 !drizzle/meta/_journal.json
+
+# 080: el puente de WhatsApp por QR se construye con su propio Dockerfile.
+puente-qr

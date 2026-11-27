@@ -76,6 +76,20 @@ export function requireBotKey(req: Request): Response | null {
   return null;
 }
 
+/**
+ * 080 — La misma llave, para el puente de WhatsApp por QR. No marca al
+ * cerebro como visto: el puente solo transporta mensajes, y «Quién responde»
+ * no debe creer que hay un agente contestando porque el puente está vivo.
+ */
+export function requireBridgeKey(req: Request): Response | null {
+  if (validBotKey(llaveDe(req))) return null;
+  const ip = clientIp(req.headers);
+  const fails = checkRateLimit(`qr-bridge-fail:${ip}`, BOT_AUTH_FAILURES);
+  return fails.allowed
+    ? apiError(401, "unauthorized", "No autorizado")
+    : apiError(429, "rate_limited", "Demasiados intentos fallidos");
+}
+
 function validBotKey(provided: string | null): boolean {
   const expected = process.env.BOT_API_KEY;
   if (!expected || !isBotKeyConfigured() || !provided) return false;

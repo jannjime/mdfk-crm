@@ -9,6 +9,7 @@ import { normalizeMetaPagePayload } from "@/server/messenger/ingest";
 import { zernioTargetChannel } from "@/server/zernio/dispatch";
 import { findZernioConnection } from "@/server/zernio/conexiones";
 import type { ZernioEvent } from "@/server/zernio";
+import { organizacionDeSesion } from "@/server/whatsapp-qr/conexion";
 import type { FuenteWebhook } from "./eventos";
 
 /**
@@ -27,6 +28,8 @@ export type Buscadores = {
   porIgUserId: (id: string) => Promise<{ organizationId: string } | null>;
   porPageId: (id: string) => Promise<{ organizationId: string } | null>;
   porCuentaZernio: (evt: ZernioEvent) => Promise<{ organizationId: string } | null>;
+  /** 080 — la sesión del puente de WhatsApp por QR es la organización. */
+  porSesionQr: (sesion: string) => Promise<{ organizationId: string } | null>;
 };
 
 const buscadoresReales: Buscadores = {
@@ -40,6 +43,7 @@ const buscadoresReales: Buscadores = {
     const found = await findZernioConnection(canal, evt.account);
     return found ? { organizationId: found.connection.organizationId } : null;
   },
+  porSesionQr: organizacionDeSesion,
 };
 
 /** La primera organización que se resuelva: una entrega trae una sola cuenta. */
@@ -80,6 +84,12 @@ export async function resolverOrganizacion(
       );
     case "zernio": {
       const found = await b.porCuentaZernio(payload as ZernioEvent);
+      return found?.organizationId ?? null;
+    }
+    case "whatsapp_qr": {
+      const sesion = (payload as { sesion?: unknown } | null)?.sesion;
+      if (typeof sesion !== "string") return null;
+      const found = await b.porSesionQr(sesion);
       return found?.organizationId ?? null;
     }
   }

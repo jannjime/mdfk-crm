@@ -2,7 +2,7 @@ import { and, eq, gt, inArray, isNotNull, notExists, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { vaciarFicha } from "@/server/bot/ficha";
-import type { CanalDelEvento } from "@/server/brains/contract";
+import { canalDelEvento, type CanalDelEvento } from "@/server/brains/contract";
 import { deleteMediaFile } from "@/server/whatsapp/media";
 
 /**
@@ -223,7 +223,7 @@ export async function eliminarConversacion(
       // Al cerebro solo se le avisa de las reales: de una de prueba nunca supo.
       conversaciones: conversaciones
         .filter((c) => !c.isTest)
-        .map((c) => ({ id: c.id, channel: c.channel })),
+        .map((c) => ({ id: c.id, channel: canalDelEvento(c.channel) })),
     };
   });
 

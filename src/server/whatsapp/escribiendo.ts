@@ -2,6 +2,7 @@ import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { graphRequest } from "@/lib/meta/client";
 import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
+import { escribiendoPorPuente } from "@/server/whatsapp-qr/puente";
 
 export type ResultadoEscribiendo =
   | { ok: true }
@@ -26,6 +27,8 @@ export async function mostrarEscribiendo(
   try {
     // Sandbox del Laboratorio: jamás toca la API real (guardrail del repo).
     if (conv.isTest) return { ok: false, reason: "sandbox" };
+    // 080: WhatsApp por QR lo muestra el puente (y marca leído) con el número.
+    if (conv.channel === "whatsapp_qr") return await escribiendoQr(organizationId, conv.id);
     // Instagram, Messenger y TikTok no tienen este indicador por esta vía.
     if (conv.channel !== "whatsapp") return { ok: false, reason: "canal_sin_soporte" };
 
@@ -62,4 +65,25 @@ export async function mostrarEscribiendo(
   } catch {
     return { ok: false, reason: "meta_error" };
   }
+}
+
+async function escribiendoQr(
+  organizationId: string,
+  conversationId: string
+): Promise<ResultadoEscribiendo> {
+  const rows = await getDb()
+    .select({ phone: schema.contact.phone })
+    .from(schema.conversation)
+    .innerJoin(schema.contact, eq(schema.conversation.contactId, schema.contact.id))
+    .where(
+      and(
+        eq(schema.conversation.organizationId, organizationId),
+        eq(schema.conversation.id, conversationId)
+      )
+    )
+    .limit(1);
+  const to = rows[0]?.phone?.replace(/\D/g, "");
+  if (!to) return { ok: false, reason: "no_connection" };
+  await escribiendoPorPuente(to);
+  return { ok: true };
 }
