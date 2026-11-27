@@ -19,6 +19,17 @@ import { sourceUrlOf } from "@/server/inbox/remote-media";
 
 export type CanalDelEvento = "whatsapp" | "instagram" | "messenger" | "tiktok";
 
+/**
+ * 080 — El canal tal como lo ve el cerebro. WhatsApp por QR es WhatsApp para
+ * quien conversa (mismo formato, mismo cliente): el contrato no gana un valor
+ * nuevo que un cerebro estricto rechazaría. Por dónde sale lo decide el CRM.
+ */
+export function canalDelEvento(
+  channel: CanalDelEvento | "whatsapp_qr"
+): CanalDelEvento {
+  return channel === "whatsapp_qr" ? "whatsapp" : channel;
+}
+
 export type MensajeDelEvento = {
   id: string;
   at: string;

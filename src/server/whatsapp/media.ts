@@ -1,3 +1,4 @@
+import { bajarAdjuntoDelPuente, esDelPuente } from "@/server/whatsapp-qr/puente";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { getEnv } from "@/lib/env";
@@ -239,8 +240,15 @@ export async function ensureAssetAvailable(
     descargar = () => downloadGraphMedia(creds.token, waMediaId);
   } else {
     const tope = TOPE_ADJUNTO_REMOTO[asset.kind as KindRemoto] ?? TOPE_ADJUNTO_REMOTO.document;
-    const origen = origenOf(asset.payload);
-    descargar = () => descargarAdjuntoRemoto(sourceUrl!, origen, tope);
+    // 080: los adjuntos de WhatsApp por QR los guarda el puente, en la red
+    // interna. Se piden SOLO a su URL configurada y con la llave; cualquier
+    // otra URL con ese origen sigue la regla estricta de siempre.
+    if (esOrigenQr(asset.payload) && esDelPuente(sourceUrl!)) {
+      descargar = () => bajarAdjuntoDelPuente(sourceUrl!, tope);
+    } else {
+      const origen = origenOf(asset.payload);
+      descargar = () => descargarAdjuntoRemoto(sourceUrl!, origen, tope);
+    }
   }
 
   try {
@@ -357,4 +365,12 @@ export async function uploadGraphMedia(
     });
   }
   return id;
+}
+
+
+/** 080 — ¿El adjunto llegó por el puente de WhatsApp por QR? */
+function esOrigenQr(payload: unknown): boolean {
+  return Boolean(
+    payload && typeof payload === "object" && (payload as { origen?: unknown }).origen === "qr"
+  );
 }

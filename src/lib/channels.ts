@@ -9,7 +9,7 @@
  * mintiendo.
  */
 
-export type Channel = "whatsapp" | "instagram" | "messenger" | "tiktok";
+export type Channel = "whatsapp" | "instagram" | "messenger" | "tiktok" | "whatsapp_qr";
 
 /**
  * Orden en que los canales se presentan al operador. WhatsApp primero: es el
@@ -17,6 +17,8 @@ export type Channel = "whatsapp" | "instagram" | "messenger" | "tiktok";
  */
 export const CHANNEL_ORDER: readonly Channel[] = [
   "whatsapp",
+  // 080: junto a su hermano; es el mismo WhatsApp por otra puerta.
+  "whatsapp_qr",
   "instagram",
   "messenger",
   "tiktok",
@@ -31,6 +33,9 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
   messenger: "Messenger",
   // 022: los mensajes directos de una cuenta TikTok Business, por Zernio.
   tiktok: "TikTok",
+  // 080: el mismo WhatsApp, conectado escaneando un QR (sesión web) en vez de
+  // la API oficial. Se distingue para que el equipo sepa por dónde contesta.
+  whatsapp_qr: "WhatsApp (QR)",
 };
 
 /**

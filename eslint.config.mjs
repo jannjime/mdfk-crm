@@ -10,6 +10,8 @@ const config = [
       "dist/**",
       "drizzle/**",
       "scripts/**",
+      // 080: el puente QR es un servicio aparte, con su propio typecheck y pruebas.
+      "puente-qr/**",
       "next-env.d.ts",
       ".tmp-seed-demo.mjs",
       ".tmp-*.mjs",

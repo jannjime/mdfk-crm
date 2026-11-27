@@ -83,6 +83,12 @@ export const envSchema = z.object({
   // por lo mismo que la de arriba: mal escrita, el despacho queda inactivo y
   // la tarjeta lo dice (server/brains/config.ts).
   BRAIN_DISPATCH_URL: z.string().optional(),
+  // 080: el puente de WhatsApp por QR (el servicio que guarda la sesión web
+  // del número), en la red interna. Ej.: http://mdfk_puente:3001. Solo cuenta
+  // con `whatsapp_qr` en CHANNELS; habla con la misma `BOT_API_KEY`. No se
+  // valida aquí, como las dos de arriba: mal escrita, el canal dice que el
+  // puente no responde y lo demás sigue funcionando.
+  WA_QR_BRIDGE_URL: z.string().optional(),
   // 008: volumen local de adjuntos. Es el camino por defecto y el de respaldo
   // del bucket (037).
   MEDIA_DIR: z.string().default("./.dev-media"),

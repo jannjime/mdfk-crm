@@ -1,3 +1,4 @@
+import { parseChannels } from "@/server/channels/enabled";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { estadoIaDe, mensajeDeEstado } from "@/lib/ai/provider";
@@ -75,6 +76,18 @@ export async function onboardingStatus(
     .where(scoped(schema.metaCredentials.organizationId, organizationId))
     .limit(1);
   const ia = await estadoIaDe(organizationId);
+  // 080: un número conectado por QR también cuenta como «WhatsApp listo».
+  // La bandera se lee directa (sin validar todo el entorno), como el resto
+  // de este módulo, que se evalúa también en pruebas sin entorno completo.
+  const qrEncendido = parseChannels(process.env.CHANNELS).has("whatsapp_qr");
+  const [qr] = qrEncendido
+    ? await db
+        .select({ status: schema.whatsappQrConnection.status })
+        .from(schema.whatsappQrConnection)
+        .where(scoped(schema.whatsappQrConnection.organizationId, organizationId))
+        .limit(1)
+    : [];
+  const qrListo = qr?.status === "conectado";
 
   const steps: ReadinessStep[] = [
     pasoPerfil(profile, Boolean(kb)),
@@ -98,14 +111,20 @@ export async function onboardingStatus(
     {
       key: "whatsapp",
       label: "WhatsApp",
-      status: channel?.status === "connected" ? "ready" : "pending",
+      status: channel?.status === "connected" || qrListo ? "ready" : "pending",
       nextAction:
         channel?.status === "connected"
           ? "Número conectado"
-          : channel
-            ? "Vuelve a conectar el número con un token vigente"
-            : "Vincular tu número",
-      href: "/settings/whatsapp",
+          : qrListo
+            ? "Número conectado por QR"
+            : channel
+              ? "Vuelve a conectar el número con un token vigente"
+              : "Vincular tu número",
+      // 080: con el QR encendido y sin API oficial, el camino corto es el QR.
+      href:
+        !channel && qrEncendido
+          ? "/settings/whatsapp-qr"
+          : "/settings/whatsapp",
       problem:
         channel?.status === "reconnect_required"
           ? "Meta dejó de aceptar el token de WhatsApp: vuelve a conectar el número."

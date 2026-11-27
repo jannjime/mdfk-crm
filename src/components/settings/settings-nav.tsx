@@ -21,6 +21,7 @@ export function SettingsNav({
   instagram = false,
   messenger = false,
   tiktok = false,
+  whatsappQr = false,
   api = false,
 }: {
   agenda?: boolean;
@@ -28,10 +29,11 @@ export function SettingsNav({
   instagram?: boolean;
   messenger?: boolean;
   tiktok?: boolean;
+  whatsappQr?: boolean;
   api?: boolean;
 }) {
   const pathname = usePathname();
-  const sections = settingsSections({ agenda, atribucion, instagram, messenger, tiktok, api });
+  const sections = settingsSections({ agenda, atribucion, instagram, messenger, tiktok, whatsappQr, api });
   return (
     <nav
       aria-label="Ajustes"
@@ -44,7 +46,8 @@ export function SettingsNav({
         >
           <span className="kicker mr-1 shrink-0 sm:mb-1 sm:mr-0 sm:px-3">{section.title}</span>
           {section.links.map((t) => {
-            const active = pathname.startsWith(t.href);
+            // 080: «/settings/whatsapp» no debe encenderse en «/settings/whatsapp-qr».
+            const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
             return (
               <Link
                 key={t.href}

@@ -85,10 +85,13 @@ export function guideFrom(status: OnboardingStatus): Guide {
     {
       key: "whatsapp",
       title: "Vincula tu número de WhatsApp",
+      // 080: el paso apunta a donde dice el estado (el QR, si está encendido).
       description:
-        "Conecta el número donde te escriben tus clientes. El CRM registra el webhook en Meta por ti al guardar.",
+        whatsapp?.href === "/settings/whatsapp-qr"
+          ? "Conecta el número donde te escriben tus clientes escaneando un código QR con tu teléfono, como en WhatsApp Web."
+          : "Conecta el número donde te escriben tus clientes. El CRM registra el webhook en Meta por ti al guardar.",
       done: ready(whatsapp),
-      href: "/settings/whatsapp",
+      href: whatsapp?.href ?? "/settings/whatsapp",
       cta: "Conectar WhatsApp",
       hint: whatsapp?.problem ?? null,
     },
