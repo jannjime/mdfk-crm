@@ -6,6 +6,7 @@ import { iniciarWorker, tanda } from "@/server/dispatch/worker";
 import { iniciarRedDeSeguridad } from "@/server/dispatch/red-de-seguridad";
 import { cifrarSecretosEnClaro } from "@/server/zernio/secreto-guardado";
 import { barrido, iniciarBarrido } from "@/server/webhooks/worker";
+import { iniciarRecordatorios } from "@/server/agenda/recordatorios";
 
 /**
  * 008 — Aviso al arranque si MEDIA_DIR no es escribible. Sin esto, el primer
@@ -126,4 +127,9 @@ export function resumeDispatch(): void {
 export function resumeWebhooks(): void {
   iniciarBarrido();
   void barrido();
+}
+
+/** 081 — Los recordatorios de citas: cada minuto, solo con la agenda encendida. */
+export function resumeRecordatorios(): void {
+  iniciarRecordatorios();
 }

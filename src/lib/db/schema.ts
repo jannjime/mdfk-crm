@@ -906,6 +906,21 @@ export const calendarSettings = pgTable(
 );
 
 /**
+ * 081 — Los recordatorios de citas: qué se manda y cuánto antes. Una fila por
+ * organización; `rules` es la lista que el dueño edita en Ajustes → Agenda.
+ */
+export const reminderSettings = pgTable("reminder_settings", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(true),
+  /** `[{ "minutosAntes": 120, "texto": "Hola {nombre}…" }]` */
+  rules: jsonb("rules").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/**
  * La cita. Una sola tabla para sesiones y bloqueos manuales: un bloqueo es
  * una cita sin contacto que ocupa agenda igual.
  */
@@ -1700,4 +1715,30 @@ export const messageReaction = pgTable(
     uniqueIndex("message_reaction_message_actor_uq").on(t.messageId, t.actor),
     index("message_reaction_conv_idx").on(t.organizationId, t.conversationId),
   ]
+);
+
+/**
+ * 081 — Cada recordatorio que se mandó (o se intentó). La llave única
+ * (cita, antelación) es la garantía de que un recordatorio sale UNA vez,
+ * aunque el proceso se reinicie o haya dos réplicas.
+ */
+export const bookingReminder = pgTable(
+  "booking_reminder",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    bookingId: text("booking_id")
+      .notNull()
+      .references(() => booking.id, { onDelete: "cascade" }),
+    minutesBefore: integer("minutes_before").notNull(),
+    status: text("status", { enum: ["enviando", "enviado", "fallido", "omitido"] }).notNull(),
+    /** Por qué falló o se omitió, para el operador (sin datos del cliente). */
+    detail: text("detail"),
+    messageId: text("message_id"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("booking_reminder_uq").on(t.bookingId, t.minutesBefore)]
 );

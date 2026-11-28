@@ -18,6 +18,7 @@ import {
   type ConnectorId,
 } from "@/lib/agenda-connectors";
 import { ConnectorCredentials } from "@/components/settings/connector-credentials";
+import { RecordatoriosCard } from "@/components/settings/recordatorios-card";
 
 /**
  * 015 — Ajustes → Agenda: cuándo atiende el negocio y cómo se entrega la
@@ -378,6 +379,9 @@ export function AgendaClient() {
       {settings.connector !== "enlace-fijo" && (
         <ConnectorCredentials connector={settings.connector} />
       )}
+
+      {/* 081 — Recordatorios de citas */}
+      {settings && <RecordatoriosCard zona={settings.timezone || "America/Lima"} />}
 
       <Card>
         <CardHeader>
