@@ -65,11 +65,14 @@ export function guideFrom(status: OnboardingStatus): Guide {
     {
       key: "agent",
       title: "Configura tu agente",
-      description:
-        "Ponle nombre y cuéntale a qué se dedica tu negocio. Si quieres ver un ejemplo primero, carga la demo desde la Bandeja y cámbiala por tus datos.",
+      // 080: con la IA vinculada, el camino corto es la entrevista (9
+      // preguntas → asistente armado con tus datos reales).
+      description: ready(ai)
+        ? "Responde 9 preguntas sobre tu negocio (qué vendes, precios, cómo cierras, tono) y la IA arma a tu asistente con tus datos."
+        : "Ponle nombre y cuéntale a qué se dedica tu negocio. Con el proveedor de IA vinculado (paso 2), responde 9 preguntas y la IA lo arma por ti.",
       done: ready(profile),
-      href: "/agent",
-      cta: "Ir a Agente",
+      href: ready(profile) || !ready(ai) ? "/agent" : "/agent/entrevista",
+      cta: ready(profile) || !ready(ai) ? "Ir a Agente" : "Responder 9 preguntas",
       hint: ready(profile) ? null : (profile?.nextAction ?? null),
     },
     {

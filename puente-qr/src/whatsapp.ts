@@ -18,7 +18,9 @@ import {
   esChatDirecto,
   extraerContenido,
   idDeArchivoSeguro,
+  lidDe,
   numeroCanonico,
+  numeroDeJidTelefono,
   segundos,
   type MensajeWa,
 } from "./mensajes.ts";
@@ -40,6 +42,8 @@ const DATA_DIR = path.resolve(process.env.DATA_DIR ?? "./data");
 const AUTH_DIR = path.join(DATA_DIR, "auth");
 const MEDIA_DIR = path.join(DATA_DIR, "media");
 const SESION_FILE = path.join(DATA_DIR, "sesion.json");
+/** `@lid` ↔ número real, aprendido de lo que entra; sobrevive a reinicios. */
+const LID_FILE = path.join(DATA_DIR, "lid.json");
 /** Los adjuntos se guardan hasta que el CRM los copia; un día basta y sobra. */
 const MEDIA_TTL_MS = 24 * 60 * 60 * 1000;
 const TOPE_ADJUNTO = 25 * 1024 * 1024;
@@ -59,14 +63,59 @@ const estado: Estado = { status: "desconectado", qr: null, phone: null, name: nu
 
 /** Ids que envió el CRM: su eco no vuelve como «lo escribió una persona». */
 const enviadosPorCrm = new Map<string, number>();
-/** Dirección de respuesta de cada número (el `@lid` si así escribió). */
-const direccionDe = new Map<string, string>();
+/**
+ * WhatsApp (2025+) esconde el número detrás de un `@lid` en muchos chats.
+ * Lo que el negocio escribe desde el teléfono a esa persona llega con el
+ * `@lid` y SIN el número: sin este mapa, el eco abría un contacto nuevo con
+ * el `@lid` por nombre en vez de seguir en la conversación de siempre.
+ */
+const numeroDeLid = new Map<string, string>();
+const lidDeNumero = new Map<string, string>();
+let guardarLidsPendiente: NodeJS.Timeout | null = null;
+/** `@lid` de personas que nunca mostraron su número: su «número» en el CRM es el `@lid`. */
+const esLidSinNumero = new Set<string>();
 /** Ids ya avisados (WhatsApp a veces entrega dos veces el mismo). */
 const avisados = new Map<string, number>();
 
 const silencioso = pino({ level: "silent" });
 
 for (const dir of [DATA_DIR, MEDIA_DIR]) fs.mkdirSync(dir, { recursive: true });
+
+try {
+  const guardado = JSON.parse(fs.readFileSync(LID_FILE, "utf8")) as Record<string, string>;
+  for (const [lid, numero] of Object.entries(guardado)) {
+    numeroDeLid.set(lid, numero);
+    lidDeNumero.set(numero, lid);
+  }
+} catch {
+  // sin archivo todavía
+}
+
+/** Aprende que un `@lid` es tal número. Se guarda en disco con calma (agrupado). */
+function aprenderLid(lid: string | null, numero: string | null): void {
+  if (!lid || !numero || lid === numero) return;
+  if (numeroDeLid.get(lid) === numero) return;
+  numeroDeLid.set(lid, numero);
+  lidDeNumero.set(numero, lid);
+  if (guardarLidsPendiente) return;
+  guardarLidsPendiente = setTimeout(() => {
+    guardarLidsPendiente = null;
+    try {
+      fs.writeFileSync(LID_FILE, JSON.stringify(Object.fromEntries(numeroDeLid)));
+    } catch (err) {
+      logger.warn({ err: String(err) }, "[wa] no se pudo guardar el mapa de @lid");
+    }
+  }, 2_000);
+}
+
+/** Lo que WhatsApp cuenta de los contactos trae a veces el par `@lid` ↔ teléfono. */
+function aprenderDeContactos(contactos: { id?: string; lid?: string; jid?: string }[] | undefined): void {
+  for (const c of contactos ?? []) {
+    const lid = lidDe(c.lid) ?? lidDe(c.id);
+    const numero = numeroDeJidTelefono(c.jid) ?? numeroDeJidTelefono(c.id);
+    aprenderLid(lid, numero);
+  }
+}
 
 function leerSesion(): string | null {
   try {
@@ -142,6 +191,9 @@ async function abrir(): Promise<void> {
     s.ev.on("creds.update", saveCreds);
     s.ev.on("connection.update", (u) => void alCambiarConexion(s, u));
     s.ev.on("messages.upsert", (e) => void alRecibir(s, e.messages, e.type));
+    s.ev.on("contacts.upsert", (c) => aprenderDeContactos(c));
+    s.ev.on("contacts.update", (c) => aprenderDeContactos(c as { id?: string; lid?: string; jid?: string }[]));
+    s.ev.on("messaging-history.set", (h) => aprenderDeContactos(h.contacts));
   } finally {
     arrancando = false;
   }
@@ -222,9 +274,16 @@ async function alRecibir(s: WASocket, mensajes: WAMessage[], tipo: string): Prom
     const contenido = extraerContenido(msg.message as Record<string, unknown> | null);
     if (!contenido) continue;
 
-    const numero = numeroCanonico(jid, msg.key.senderPn);
-    if (!numero) continue;
-    if (!deMi) direccionDe.set(numero, jid);
+    const lid = lidDe(jid);
+    // El número real: el que trae el mensaje (`senderPn`, solo en lo que
+    // entra) o el aprendido para ese `@lid`.
+    const conocido = lid ? (numeroDeJidTelefono(msg.key.senderPn) ?? numeroDeLid.get(lid) ?? null) : null;
+    if (lid && conocido) aprenderLid(lid, conocido);
+    // Lo que entra sin número conocido usa el `@lid` como identidad (estable
+    // para esa persona); un eco sin número viaja con su `@lid` y el CRM lo
+    // asigna al contacto que ya escribió por esa dirección.
+    const numero = lid ? (conocido ?? (deMi ? null : lid)) : numeroCanonico(jid, msg.key.senderPn);
+    if (!numero && !lid) continue;
 
     let adjunto: MensajeCrm["adjunto"] = null;
     if (contenido.conArchivo) {
@@ -232,6 +291,7 @@ async function alRecibir(s: WASocket, mensajes: WAMessage[], tipo: string): Prom
       if (guardado) adjunto = { id: guardado, mime: contenido.mime, nombre: contenido.nombreArchivo };
     }
     avisados.set(id, Date.now());
+    if (lid && !conocido && !deMi) esLidSinNumero.add(lid);
 
     avisarAlCrm({
       sesion: estado.sesion,
@@ -239,6 +299,7 @@ async function alRecibir(s: WASocket, mensajes: WAMessage[], tipo: string): Prom
       mensaje: {
         id,
         numero,
+        lid,
         nombre: deMi ? null : (msg.pushName ?? null),
         timestamp: segundos(msg.messageTimestamp),
         tipo: contenido.tipo,
@@ -249,9 +310,18 @@ async function alRecibir(s: WASocket, mensajes: WAMessage[], tipo: string): Prom
   }
 }
 
-/** A dónde se le contesta a un número: el `@lid` por el que escribió, si se conoce. */
-function direccion(numero: string): string {
-  return direccionDe.get(numero) ?? `${numero}@s.whatsapp.net`;
+/**
+ * A dónde se le contesta: al `@lid` por el que escribe esa persona, si se
+ * conoce (así sigue el mismo chat), o a su número. Un «número» que en
+ * realidad es un `@lid` (alguien que nunca mostró su teléfono) va a su `@lid`.
+ */
+function direccion(numero: string, lidDelCrm?: string | null): string {
+  // El CRM recuerda el `@lid` de cada contacto: manda sobre la memoria del puente.
+  if (lidDelCrm) return `${lidDelCrm}@lid`;
+  const lid = lidDeNumero.get(numero);
+  if (lid) return `${lid}@lid`;
+  if (esLidSinNumero.has(numero)) return `${numero}@lid`;
+  return `${numero}@s.whatsapp.net`;
 }
 
 // --- Lo que pide el CRM ---------------------------------------------------
@@ -301,17 +371,17 @@ export async function desconectar(): Promise<Estado> {
   return estadoActual();
 }
 
-export async function enviarTexto(numero: string, texto: string): Promise<string> {
+export async function enviarTexto(numero: string, texto: string, lid?: string | null): Promise<string> {
   if (!sock || estado.status !== "conectado") throw new SinConexion("WhatsApp no está conectado");
-  const res = await sock.sendMessage(direccion(numero), { text: texto });
+  const res = await sock.sendMessage(direccion(numero, lid), { text: texto });
   const id = res?.key?.id;
   if (id) enviadosPorCrm.set(id, Date.now());
   return id ?? `local_${Date.now()}`;
 }
 
-export async function escribiendo(numero: string): Promise<void> {
+export async function escribiendo(numero: string, lid?: string | null): Promise<void> {
   if (!sock || estado.status !== "conectado") return;
-  await sock.sendPresenceUpdate("composing", direccion(numero)).catch(() => {});
+  await sock.sendPresenceUpdate("composing", direccion(numero, lid)).catch(() => {});
 }
 
 /** El archivo de un adjunto entrante, para que el CRM lo copie. */

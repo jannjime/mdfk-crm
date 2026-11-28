@@ -213,6 +213,25 @@ export function AgentClient() {
       )}
 
       <div className="grid gap-4 p-4 sm:gap-6 sm:p-6 lg:grid-cols-2">
+        {/* 080 — La entrevista del kit: el camino más rápido a un asistente con tus datos. */}
+        <Card className="border-primary/40 bg-brand-tint lg:col-span-2">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="flex items-center gap-1.5 font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" /> Arma tu asistente respondiendo 9 preguntas
+              </p>
+              <p className="text-sm text-text-2">
+                Qué vendes, precios, cómo cierras y cómo habla. La IA lo deja listo con tus datos reales.
+              </p>
+            </div>
+            <Link
+              href="/agent/entrevista"
+              className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-brand-hover"
+            >
+              Empezar
+            </Link>
+          </CardContent>
+        </Card>
         <RubroSection onAplicada={() => void refetch()} />
         <RolSection
           profile={profile}

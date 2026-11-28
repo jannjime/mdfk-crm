@@ -107,7 +107,7 @@ type SendTarget = {
   /** 022: presente solo en conversaciones de TikTok. */
   tiktok?: TiktokCredentials;
   /** 080: presente solo en conversaciones de WhatsApp por QR (el número del cliente). */
-  qr?: { to: string };
+  qr?: { to: string; lid: string | null };
   /**
    * 024: el envío sale con la etiqueta de agente humano. Lo decide el
    * pre-vuelo (`assertReplyWindow`), no cada canal por su cuenta.
@@ -325,12 +325,14 @@ async function prepareSend(
     if (!qrTo) {
       throw new SendError("meta_error", "El contacto no tiene número de WhatsApp");
     }
+    // El `@lid` del contacto, si lo tiene: así la respuesta sigue en el mismo chat.
+    const qrLid = row.contact.waUserId?.startsWith("lid:") ? row.contact.waUserId.slice(4) : null;
     return {
       conversation: row.conversation,
       credentials: null,
       destinatario: { to: qrTo },
       recipient: qrTo,
-      qr: { to: qrTo },
+      qr: { to: qrTo, lid: qrLid },
     };
   }
 
@@ -572,7 +574,7 @@ export async function sendText(input: {
       : target.tiktok
         ? await callTiktokSend(target, text)
         : target.qr
-          ? await callQrSend(target.qr.to, text)
+          ? await callQrSend(target.qr.to, text, target.qr.lid)
           : await enviarPorWhatsappConRespaldo();
 
   const messageId = await persistOutbound({
@@ -1006,9 +1008,9 @@ async function callTiktokSend(target: SendTarget, text: string): Promise<string>
  * es «no disponible», no un rechazo del cliente: el operador ve que hay que
  * revisar la conexión, y el cerebro lo trata como un fallo de transporte.
  */
-async function callQrSend(to: string, text: string): Promise<string> {
+async function callQrSend(to: string, text: string, lid: string | null): Promise<string> {
   try {
-    return `${QR_IDENTITY_PREFIX}${await enviarPorPuente(to, text)}`;
+    return `${QR_IDENTITY_PREFIX}${await enviarPorPuente(to, text, lid)}`;
   } catch (err) {
     if (err instanceof PuenteError) {
       throw new SendError(

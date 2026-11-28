@@ -20,7 +20,10 @@ export type EventoCrm =
 
 export type MensajeCrm = {
   id: string;
-  numero: string;
+  /** El número real; null solo en un eco a un `@lid` cuyo número no se conoce. */
+  numero: string | null;
+  /** El `@lid` (dígitos) por el que va el chat, si va por uno. */
+  lid: string | null;
   nombre: string | null;
   timestamp: number;
   tipo: string;

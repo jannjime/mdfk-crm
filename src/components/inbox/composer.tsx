@@ -44,6 +44,9 @@ import {
   type RespuestaRapida,
 } from "@/lib/respuestas-rapidas";
 
+
+/** 080 — Lo que devuelve el servidor para un canal sin ventana (no se cierra nunca). */
+const SIN_LIMITE_MS = 1e12;
 export function Composer({
   conversation,
   onSend,
@@ -886,7 +889,10 @@ export function Composer({
         <p className="font-mono text-[10.5px] tracking-[0.04em] text-text-3">
           {soloPersona
             ? `Ventana humana · quedan ${formatRemainingLong(human!.remainingMs)}`
-            : `Ventana abierta · quedan ${formatRemaining(conversation.windowRemainingMs)}`}
+            : conversation.windowRemainingMs >= SIN_LIMITE_MS
+              ? // 080: WhatsApp por QR no tiene ventana: se puede escribir siempre.
+                "Sin límite de ventana"
+              : `Ventana abierta · quedan ${formatRemaining(conversation.windowRemainingMs)}`}
         </p>
       </div>
     </div>

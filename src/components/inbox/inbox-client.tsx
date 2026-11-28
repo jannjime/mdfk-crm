@@ -19,6 +19,7 @@ import { useEvents } from "@/components/use-events";
 import { ConversationList } from "./conversation-list";
 import { useFijar } from "./use-fijar";
 import { PinHeaderButton } from "./pin-toggle";
+import { TomarChatButton } from "./tomar-chat";
 import { MessageThread } from "./message-thread";
 import { Composer } from "./composer";
 import {
@@ -579,6 +580,15 @@ export function InboxClient({
                   </p>
                 </div>
               </div>
+              <TomarChatButton
+                aiActiva={selected.aiEnabled && !selected.handoffAt}
+                onTomar={() => void patchConversation({ aiEnabled: false, pauseFor: "indefinida" })}
+                onDevolver={() =>
+                  void patchConversation(
+                    selected.handoffAt ? { reactivate: true } : { aiEnabled: true }
+                  )
+                }
+              />
               <PinHeaderButton
                 pinned={Boolean(selected.pinnedAt)}
                 onToggle={() => void fijar.toggle(selected)}
