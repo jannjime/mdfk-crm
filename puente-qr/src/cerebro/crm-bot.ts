@@ -20,7 +20,7 @@ function base(): string {
 
 async function llamar<T>(
   ruta: string,
-  init: { method?: "GET" | "POST" | "PUT"; body?: unknown; timeoutMs?: number } = {}
+  init: { method?: "GET" | "POST" | "PUT" | "PATCH"; body?: unknown; timeoutMs?: number } = {}
 ): Promise<T> {
   const res = await fetch(`${base()}${ruta}`, {
     method: init.method ?? "GET",
@@ -66,7 +66,41 @@ export type Contexto = {
   conversation: { id: string; aiEnabled: boolean; handoffAt: string | null; windowOpen: boolean };
   lead: { id: string; stageName: string; nextStages: { id: string; name: string }[] } | null;
   adOrigen: { headline: string | null; body: string | null } | null;
+  /** Solo con la agenda encendida. */
+  booking?: {
+    timezone: string;
+    next: { label: string; startUtc: string } | null;
+    unresolved: { label: string } | null;
+    lastClosed: { label: string; status: string } | null;
+  } | null;
 };
+
+export type Hueco = { startUtc: string; label: string; dayLabel?: string; time?: string };
+
+/** Huecos libres (quedan registrados como ofrecidos a esa conversación). null = sin agenda. */
+export async function huecos(conversationId: string, fecha?: string): Promise<Hueco[] | null> {
+  const q = new URLSearchParams({ conversationId, limit: "6", perDay: "3" });
+  if (fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) q.set("date", fecha);
+  try {
+    const r = await llamar<{ slots?: Hueco[] }>(`/api/bot/availability?${q.toString()}`);
+    return r.slots ?? [];
+  } catch (err) {
+    if (err instanceof ErrorCrm && err.status === 404 && !err.code) return null;
+    throw err;
+  }
+}
+
+export const reservar = (conversationId: string, startUtc: string, notes?: string | null) =>
+  llamar<{ bookingId: string; label: string; meetingLink: string | null }>("/api/bot/bookings", {
+    method: "POST",
+    body: { conversationId, startUtc, notes: notes ?? null },
+  });
+
+export const reprogramar = (conversationId: string, startUtc: string) =>
+  llamar<{ bookingId: string; label: string }>("/api/bot/bookings", {
+    method: "PATCH",
+    body: { conversationId, startUtc },
+  });
 
 let perfilCache: { valor: Perfil; hasta: number } | null = null;
 

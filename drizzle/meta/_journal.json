@@ -239,6 +239,13 @@
       "when": 1795813015591,
       "tag": "0033_whatsapp_qr",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795881479596,
+      "tag": "0034_recordatorios",
+      "breakpoints": true
     }
   ]
 }

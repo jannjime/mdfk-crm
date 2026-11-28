@@ -5,7 +5,10 @@ import {
   ErrorCrm,
   escribiendo,
   guardarFicha,
+  huecos,
   moverEtapa,
+  reprogramar,
+  reservar,
   pasarAPersona,
   pensar,
   perfil,
@@ -111,6 +114,52 @@ function herramientas(p: Perfil, ctx: Contexto | null): unknown[] {
       },
     });
   }
+  if (tools.has("agendar") || tools.has("reprogramar")) {
+    out.push({
+      type: "function",
+      function: {
+        name: "ver_horarios",
+        description:
+          "Consulta los horarios LIBRES de la agenda. Úsala SIEMPRE antes de ofrecer o confirmar una hora: nunca inventes horarios. Sin fecha trae los próximos; con fecha (AAAA-MM-DD), los de ese día.",
+        parameters: {
+          type: "object",
+          properties: { fecha: { type: "string", description: "Opcional, AAAA-MM-DD" } },
+        },
+      },
+    });
+  }
+  if (tools.has("agendar")) {
+    out.push({
+      type: "function",
+      function: {
+        name: "agendar_cita",
+        description:
+          "Reserva la cita en uno de los horarios que te dio ver_horarios (usa su startUtc exacto). Solo cuando el cliente ya eligió la hora.",
+        parameters: {
+          type: "object",
+          properties: {
+            startUtc: { type: "string", description: "El startUtc exacto del horario elegido" },
+            notas: { type: "string", description: "Opcional: qué servicio o detalle importante" },
+          },
+          required: ["startUtc"],
+        },
+      },
+    });
+  }
+  if (tools.has("reprogramar") && ctx?.booking?.next) {
+    out.push({
+      type: "function",
+      function: {
+        name: "mover_cita",
+        description: `Mueve la próxima cita del cliente (${ctx.booking.next.label}) a otro horario libre de ver_horarios.`,
+        parameters: {
+          type: "object",
+          properties: { startUtc: { type: "string" } },
+          required: ["startUtc"],
+        },
+      },
+    });
+  }
   out.push({
     type: "function",
     function: {
@@ -165,6 +214,20 @@ async function ejecutar(
         const r = await moverEtapa(conversationId, String(args.etapa ?? ""));
         return r.changed ? `Listo: ahora está en «${r.lead.stageName}».` : "Ya estaba en esa etapa.";
       }
+      case "ver_horarios": {
+        const h = await huecos(conversationId, typeof args.fecha === "string" ? args.fecha : undefined);
+        if (h === null) return "Este negocio no usa agenda: ofrece pasar con el equipo para coordinar.";
+        if (h.length === 0) return "No hay horarios libres en ese rango. Ofrece otro día o pasar con el equipo.";
+        return `Horarios libres (ofrece 2 o 3, con el día y la hora tal cual):\n${h.map((x) => `- ${x.label} → startUtc ${x.startUtc}`).join("\n")}`;
+      }
+      case "agendar_cita": {
+        const c = await reservar(conversationId, String(args.startUtc ?? ""), typeof args.notas === "string" ? args.notas.slice(0, 300) : null);
+        return `Cita reservada: ${c.label}${c.meetingLink ? `. Enlace: ${c.meetingLink}` : ""}. Confírmasela al cliente.`;
+      }
+      case "mover_cita": {
+        const c = await reprogramar(conversationId, String(args.startUtc ?? ""));
+        return `Cita movida a: ${c.label}. Confírmaselo al cliente.`;
+      }
       case "pasar_a_persona":
         // Se hace DESPUÉS de enviar la despedida (el CRM pausa la IA al traspasar).
         estado.traspaso = ["cliente", "modelo", "hostilidad"].includes(String(args.motivo)) ? String(args.motivo) : "cliente";
@@ -173,6 +236,9 @@ async function ejecutar(
         return "Herramienta desconocida.";
     }
   } catch (err) {
+    if (err instanceof ErrorCrm && err.status === 409) {
+      return "Ese horario ya no está libre (alguien lo tomó). Llama otra vez a ver_horarios y ofrece otros.";
+    }
     return `No se pudo: ${err instanceof Error ? err.message : String(err)}`;
   }
 }

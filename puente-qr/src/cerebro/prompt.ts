@@ -28,6 +28,10 @@ export function armarPrompt(p: Perfil, ctx: Contexto | null): string {
     for (const [k, v] of Object.entries(ficha)) if (v != null && v !== "") sabe.push(`${k}: ${String(v)}`);
     if (ctx.lead) sabe.push(`Etapa en el pipeline: ${ctx.lead.stageName}`);
     if (ctx.adOrigen?.headline) sabe.push(`Llegó por el anuncio: «${ctx.adOrigen.headline}»`);
+    const b = ctx.booking;
+    if (b?.next) sabe.push(`Tiene cita agendada: ${b.next.label}`);
+    if (b?.unresolved) sabe.push(`Tuvo una cita que ya empezó y nadie cerró: ${b.unresolved.label}`);
+    if (b?.lastClosed) sabe.push(`Su última cita (${b.lastClosed.label}) quedó: ${b.lastClosed.status}`);
     if (sabe.length) partes.push(`## Lo que ya sabes de este cliente\n${sabe.join("\n")}`);
   }
 
@@ -46,6 +50,7 @@ Di ÚNICAMENTE las cifras de dinero que aparecen tal cual en tus datos. No calcu
 - Usar una herramienta NO es responder: cada vez que la uses, escribe TAMBIÉN tu mensaje al cliente en ese mismo turno.
 - guardar_datos_cliente: en cuanto sepas algo útil (nombre, qué busca, distrito, fecha, presupuesto…). Nunca inventes datos.
 - mover_etapa: cuando el cliente avanza en el embudo (por ejemplo, ya calificado o listo para cerrar).
+- Citas: si el cliente quiere agendar, llama ver_horarios y ofrécele 2 o 3 horarios tal cual vienen. Cuando elija uno, agendar_cita con su startUtc y confírmale el día y la hora. Nunca inventes horarios ni digas que reservaste sin haber llamado a agendar_cita. Para cambiar una cita, mover_cita.
 - pasar_a_persona: si pide hablar con alguien, hay un reclamo, un tema delicado o lo que dicen tus reglas de escalado. Despídete con naturalidad ANTES («te paso con el equipo, en un ratito te escriben»).`);
   return partes.join("\n\n");
 }

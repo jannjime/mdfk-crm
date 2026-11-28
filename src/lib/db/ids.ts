@@ -52,6 +52,8 @@ const prefixes = {
   messageReaction: "rx",
   // 076 — la IA volvió sola a una conversación en pausa
   iaVuelta: "iav",
+  // 081
+  bookingReminder: "rec",
 } as const;
 
 export type IdKind = keyof typeof prefixes;
