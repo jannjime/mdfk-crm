@@ -145,6 +145,21 @@ export function WhatsappQrClient() {
         </div>
       )}
 
+      {conectado && (
+        <div className="flex flex-col gap-3 rounded-lg border border-primary/40 bg-brand-tint p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm">
+            <p className="font-semibold">Siguiente paso: cuéntale a tu asistente sobre tu negocio</p>
+            <p className="text-text-2">9 preguntas y la IA lo deja listo para atender este número.</p>
+          </div>
+          <a
+            href="/agent/entrevista"
+            className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-brand-hover"
+          >
+            Empezar
+          </a>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>{conectado ? "Número conectado" : "Conecta tu WhatsApp con un QR"}</CardTitle>

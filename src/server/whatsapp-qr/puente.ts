@@ -161,8 +161,12 @@ export async function desconectarPuente(): Promise<EstadoPuente> {
 }
 
 /** Envía un texto. Devuelve el id del mensaje en WhatsApp. */
-export async function enviarPorPuente(to: string, text: string): Promise<string> {
-  const res = await llamar("/enviar", { method: "POST", body: { to, text } });
+export async function enviarPorPuente(
+  to: string,
+  text: string,
+  lid: string | null = null
+): Promise<string> {
+  const res = await llamar("/enviar", { method: "POST", body: { to, text, lid } });
   const body = (await res.json().catch(() => null)) as { id?: unknown } | null;
   const id = typeof body?.id === "string" && body.id ? body.id : null;
   // Sin id no hay con qué deduplicar el eco: se inventa uno estable y único.
@@ -170,9 +174,9 @@ export async function enviarPorPuente(to: string, text: string): Promise<string>
 }
 
 /** «Escribiendo…». Best-effort: un fallo aquí jamás detiene una respuesta. */
-export async function escribiendoPorPuente(to: string): Promise<void> {
+export async function escribiendoPorPuente(to: string, lid: string | null = null): Promise<void> {
   try {
-    await llamar("/escribiendo", { method: "POST", body: { to } });
+    await llamar("/escribiendo", { method: "POST", body: { to, lid } });
   } catch {
     // el aviso es cortesía; el mensaje sale igual
   }

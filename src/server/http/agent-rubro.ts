@@ -11,6 +11,8 @@ import {
 } from "@/lib/rubros";
 import { aplicarPlantilla } from "@/server/rubros/aplicar";
 import { generarPlantilla } from "@/server/rubros/generar";
+import { generarDesdeEntrevista } from "@/server/rubros/entrevista";
+import { respuestasSchema } from "@/lib/entrevista";
 
 /**
  * MDFK — Plantillas por rubro.
@@ -60,4 +62,20 @@ export const GENERAR = conSesion(async (session, req: Request) => {
   if (!body.ok) return body.response;
   const r = await generarPlantilla(body.data.descripcion, session.organizationId);
   return Response.json(r);
+});
+
+/**
+ * 080 — `POST /api/agent/entrevista`: arma la plantilla con las 9 respuestas
+ * de la entrevista (sin aplicarla: la pantalla la enseña y se aplica con
+ * `POST /api/agent/rubro { plantilla }`, igual que «Otros»).
+ */
+export const ENTREVISTA = conSesion(async (session, req: Request) => {
+  if (!canConfigure(session.role)) {
+    return apiError(403, "forbidden", "Solo quien administra puede configurar el asistente");
+  }
+  const body = await parseBody(req, z.object({ respuestas: respuestasSchema }));
+  if (!body.ok) return body.response;
+  const r = await generarDesdeEntrevista(body.data.respuestas, session.organizationId);
+  if (!r.ok) return apiError(409, "sin_ia", r.motivo);
+  return Response.json({ plantilla: r.plantilla });
 });

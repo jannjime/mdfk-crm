@@ -1,4 +1,4 @@
-# Puente de WhatsApp por QR (MDFK CRM)
+# Puente de WhatsApp por QR + cerebro (MDFK CRM)
 
 Servicio aparte que guarda la sesión web de WhatsApp (Baileys, del kit de
 agente de WhatsApp) y se la presta al CRM. Spec: `specs/080-whatsapp-qr/spec.md`.
@@ -15,7 +15,10 @@ agente de WhatsApp) y se la presta al CRM. Spec: `specs/080-whatsapp-qr/spec.md`
 4. Almacenamiento: volumen `puente-data` en `/data` (ahí vive la sesión).
 5. **Sin dominio**: solo lo usa el CRM por la red interna.
 6. En el CRM: `CHANNELS=whatsapp,whatsapp_qr` y
-   `WA_QR_BRIDGE_URL=http://<proyecto>_puente:3001`. Implementar.
+   `WA_QR_BRIDGE_URL=http://<proyecto>_puente:3001`. Para que la IA conteste
+   (el cerebro vive aquí mismo):
+   `BRAIN_DISPATCH_URL=http://<proyecto>_puente:3001/cerebro/despacho` y
+   `BRAIN_HEALTH_URL=http://<proyecto>_puente:3001/health`. Implementar.
 7. Ajustes → WhatsApp (QR) → «Mostrar código QR» y escanéalo.
 
 ## Desarrollo

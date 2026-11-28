@@ -73,6 +73,9 @@ export function isWindowOpen(
   now: Date = new Date(),
   windowMs: number = WINDOW_MS
 ): boolean {
+  // 080: un canal sin ventana (WhatsApp por QR) está siempre abierto, aunque
+  // la conversación la haya empezado el negocio desde el teléfono.
+  if (windowMs === Number.POSITIVE_INFINITY) return true;
   if (!lastInboundAt) return false;
   return now.getTime() - lastInboundAt.getTime() < windowMs;
 }
@@ -83,9 +86,10 @@ export function windowRemainingMs(
   now: Date = new Date(),
   windowMs: number = WINDOW_MS
 ): number {
-  if (!lastInboundAt) return 0;
-  // Un canal sin ventana no se cierra nunca: no hay «restante» que contar.
+  // Un canal sin ventana no se cierra nunca: no hay «restante» que contar
+  // (080: ni siquiera si la conversación la empezó el negocio).
   if (!Number.isFinite(windowMs)) return Number.MAX_SAFE_INTEGER;
+  if (!lastInboundAt) return 0;
   const remaining = windowMs - (now.getTime() - lastInboundAt.getTime());
   return Math.max(0, remaining);
 }

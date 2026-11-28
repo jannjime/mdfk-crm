@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
@@ -50,8 +50,13 @@ const adjunto = z.object({
 
 const mensaje = z.object({
   id: z.string().min(1).max(200),
-  /** El número del cliente (o del destinatario, en un eco), en dígitos. */
-  numero: z.string().min(5).max(32),
+  /**
+   * El número del cliente (o del destinatario, en un eco), en dígitos. Null
+   * solo en un eco a un `@lid` cuyo número el puente no conoce.
+   */
+  numero: z.string().min(5).max(32).nullish(),
+  /** El `@lid` del chat (dígitos), si WhatsApp esconde el número tras uno. */
+  lid: z.string().regex(/^\d{5,24}$/).nullish(),
   nombre: z.string().max(200).nullish(),
   /** Segundos desde epoch. */
   timestamp: z.union([z.number(), z.string()]),
@@ -79,7 +84,9 @@ export type EventoQr = z.infer<typeof evento>;
 /** El mensaje ya en la forma del núcleo. */
 export type MensajeQr = {
   id: string;
-  phone: string;
+  /** null: eco a un `@lid` sin número conocido (se resuelve por el `@lid`). */
+  phone: string | null;
+  lid: string | null;
   profileName: string | null;
   timestamp: string;
   type: TipoQr;
@@ -95,8 +102,11 @@ export function normalizarEventoQr(payload: unknown): EventoQr | null {
 
 /** Pura: el mensaje del puente en la forma del núcleo; null si no tiene nada que guardar. */
 export function normalizarMensajeQr(m: EventoQr & { tipo: "mensaje" | "eco" }): MensajeQr | null {
-  const digitos = m.mensaje.numero.replace(/\D/g, "");
-  if (digitos.length < 5) return null;
+  const digitos = (m.mensaje.numero ?? "").replace(/\D/g, "");
+  const lid = m.mensaje.lid ?? null;
+  if (digitos.length < 5 && !lid) return null;
+  // Un mensaje del cliente siempre trae a quién: sin número, su `@lid`.
+  if (digitos.length < 5 && m.tipo === "mensaje") return null;
   const tipo: TipoQr = (TIPOS as readonly string[]).includes(m.mensaje.tipo)
     ? (m.mensaje.tipo as TipoQr)
     : "text";
@@ -107,7 +117,8 @@ export function normalizarMensajeQr(m: EventoQr & { tipo: "mensaje" | "eco" }): 
   const ts = Number(m.mensaje.timestamp);
   return {
     id: m.mensaje.id,
-    phone: normalizeMx(digitos),
+    phone: digitos.length >= 5 ? normalizeMx(digitos) : null,
+    lid,
     profileName: m.mensaje.nombre?.trim() || null,
     timestamp: String(Number.isFinite(ts) && ts > 0 ? Math.floor(ts) : Math.floor(Date.now() / 1000)),
     // Un adjunto que no llegó se guarda como el texto que lo acompañaba.
@@ -119,16 +130,24 @@ export function normalizarMensajeQr(m: EventoQr & { tipo: "mensaje" | "eco" }): 
   };
 }
 
-/** La identidad del contacto: su número, en el espacio del canal QR. */
-export function identidadQr(m: MensajeQr): ResolvedIdentity {
+/**
+ * La identidad del contacto: su número, en el espacio del canal QR. El
+ * `@lid` va en `waUserId`: es lo que permite asignarle los ecos que el
+ * teléfono manda solo con el `@lid`. Null si no hay número (eco sin resolver).
+ */
+export function identidadQr(m: MensajeQr): ResolvedIdentity | null {
+  if (!m.phone) return null;
   return {
     identity: `${QR_PREFIX}${m.phone}`,
     channel: "whatsapp_qr",
     phone: m.phone,
-    waUserId: null,
+    waUserId: m.lid ? `${LID_PREFIX}${m.lid}` : null,
     profileName: m.profileName,
   };
 }
+
+/** Cómo se guarda el `@lid` en `contact.wa_user_id`. */
+export const LID_PREFIX = "lid:";
 
 /** El adjunto, pendiente de bajar del puente (en segundo plano, como los demás). */
 function mediaDelPuente(m: MensajeQr): MediaInput | null {
@@ -178,9 +197,11 @@ export async function processQrPayload(payload: unknown): Promise<void> {
   await marcarVistoQr(organizationId);
 
   if (evt.tipo === "mensaje") {
+    const identity = identidadQr(m);
+    if (!identity) return; // normalizar ya lo impide; el tipo no lo sabe
     await ingestInboundMessage({
       organizationId,
-      identity: identidadQr(m),
+      identity,
       waMessageId: `${QR_PREFIX}${m.id}`,
       type: m.type,
       text: m.adjunto ? null : m.text,
@@ -200,11 +221,13 @@ export async function processQrPayload(payload: unknown): Promise<void> {
  */
 async function ingestEcoQr(organizationId: string, m: MensajeQr): Promise<void> {
   const db = getDb();
-  const { contact } = await getOrCreateContactByIdentity(organizationId, {
-    ...identidadQr(m),
-    // El nombre del eco es el del negocio, no el del cliente.
-    profileName: null,
-  });
+  const contact = await contactoDelEco(organizationId, m);
+  if (!contact) {
+    // Un eco a alguien que nunca escribió y cuyo número no se conoce: no se
+    // inventa un contacto con el `@lid` por nombre (era el error de 080).
+    console.warn(`[qr] eco ${m.id} a un @lid sin contacto conocido: descartado`);
+    return;
+  }
   const conversation = await getOrCreateConversation(organizationId, contact.id, {
     channel: "whatsapp_qr",
   });
@@ -244,4 +267,37 @@ async function ingestEcoQr(organizationId: string, m: MensajeQr): Promise<void> 
     type: "conversation.updated",
     data: { conversation: { id: conversation.id } },
   });
+}
+
+/**
+ * El contacto de un eco. Con número, el de siempre (o uno nuevo: el negocio
+ * le escribió primero desde el teléfono). Sin número, el que ya escribió por
+ * ese `@lid`.
+ */
+async function contactoDelEco(organizationId: string, m: MensajeQr) {
+  const identity = identidadQr(m);
+  if (identity) {
+    const { contact } = await getOrCreateContactByIdentity(organizationId, {
+      ...identity,
+      // El nombre del eco es el del negocio, no el del cliente.
+      profileName: null,
+    });
+    return contact;
+  }
+  if (!m.lid) return null;
+  const rows = await getDb()
+    .select()
+    .from(schema.contact)
+    .where(
+      and(
+        eq(schema.contact.organizationId, organizationId),
+        eq(schema.contact.channel, "whatsapp_qr"),
+        or(
+          eq(schema.contact.waUserId, `${LID_PREFIX}${m.lid}`),
+          eq(schema.contact.waIdentity, `${QR_PREFIX}${m.lid}`)
+        )
+      )
+    )
+    .limit(1);
+  return rows[0] ?? null;
 }

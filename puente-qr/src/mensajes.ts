@@ -56,6 +56,20 @@ export function numeroCanonico(remoteJid: string, senderPn?: string): string {
   return digitos(remoteJid);
 }
 
+/** El identificador interno de un `@lid`, en dígitos; null si el jid no es `@lid`. */
+export function lidDe(jid: string | null | undefined): string | null {
+  if (!jid || !jid.endsWith("@lid")) return null;
+  const d = digitos(jid);
+  return d || null;
+}
+
+/** El número real de un jid de teléfono (`@s.whatsapp.net`); null si no lo es. */
+export function numeroDeJidTelefono(jid: string | null | undefined): string | null {
+  if (!jid || !jid.endsWith("@s.whatsapp.net")) return null;
+  const d = digitos(jid);
+  return d || null;
+}
+
 /** Desenvuelve los contenedores (mensajes efímeros, «ver una vez», con caption de documento). */
 function interior(message: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
   let m = message ?? null;
@@ -124,4 +138,9 @@ export function numeroValido(raw: unknown): string | null {
 /** Un id de adjunto seguro como nombre de archivo (sin rutas). */
 export function idDeArchivoSeguro(id: string): string | null {
   return /^[A-Za-z0-9_-]{4,120}$/.test(id) ? id : null;
+}
+
+/** Un `@lid` en dígitos (más largo que un teléfono a veces), o null. */
+export function lidValido(raw: unknown): string | null {
+  return typeof raw === "string" && /^\d{5,24}$/.test(raw) ? raw : null;
 }

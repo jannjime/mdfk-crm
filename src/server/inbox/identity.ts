@@ -199,6 +199,15 @@ export async function getOrCreateContactByIdentity(
       .limit(1);
     const existingIg = found[0];
     if (existingIg) {
+      // 080: el `@lid` de un contacto por QR se aprende cuando llega; con él
+      // se le asignan los ecos que el teléfono manda sin número.
+      if (channel === "whatsapp_qr" && resolved.waUserId && existingIg.waUserId !== resolved.waUserId) {
+        await db
+          .update(schema.contact)
+          .set({ waUserId: resolved.waUserId, updatedAt: new Date() })
+          .where(eq(schema.contact.id, existingIg.id));
+        existingIg.waUserId = resolved.waUserId;
+      }
       if (existingIg.archivedAt) {
         await db
           .update(schema.contact)
@@ -218,7 +227,7 @@ export async function getOrCreateContactByIdentity(
         // 080: el contacto de WhatsApp por QR sí tiene teléfono, y se guarda:
         // es lo que ve el equipo y lo que el cerebro le dice al cliente.
         phone: channel === "whatsapp_qr" ? resolved.phone : null,
-        waUserId: null,
+        waUserId: channel === "whatsapp_qr" ? resolved.waUserId : null,
         name:
           resolved.profileName?.trim() ||
           (channel === "whatsapp_qr" && resolved.phone

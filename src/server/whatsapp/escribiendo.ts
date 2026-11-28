@@ -72,7 +72,7 @@ async function escribiendoQr(
   conversationId: string
 ): Promise<ResultadoEscribiendo> {
   const rows = await getDb()
-    .select({ phone: schema.contact.phone })
+    .select({ phone: schema.contact.phone, waUserId: schema.contact.waUserId })
     .from(schema.conversation)
     .innerJoin(schema.contact, eq(schema.conversation.contactId, schema.contact.id))
     .where(
@@ -84,6 +84,7 @@ async function escribiendoQr(
     .limit(1);
   const to = rows[0]?.phone?.replace(/\D/g, "");
   if (!to) return { ok: false, reason: "no_connection" };
-  await escribiendoPorPuente(to);
+  const lid = rows[0]?.waUserId?.startsWith("lid:") ? rows[0].waUserId.slice(4) : null;
+  await escribiendoPorPuente(to, lid);
   return { ok: true };
 }

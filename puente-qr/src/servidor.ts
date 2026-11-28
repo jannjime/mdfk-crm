@@ -1,8 +1,9 @@
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { eventosEnCola } from "./crm.ts";
+import { firmaValida, recibirDespacho } from "./cerebro/index.ts";
 import { logger } from "./log.ts";
-import { numeroValido } from "./mensajes.ts";
+import { lidValido, numeroValido } from "./mensajes.ts";
 import {
   SesionAjena,
   SinConexion,
@@ -48,16 +49,21 @@ function json(res: http.ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-async function leerCuerpo(req: http.IncomingMessage): Promise<Record<string, unknown>> {
+async function leerCrudo(req: http.IncomingMessage, tope: number): Promise<string> {
   const partes: Buffer[] = [];
   let largo = 0;
   for await (const parte of req) {
     largo += (parte as Buffer).length;
-    if (largo > TOPE_CUERPO) throw new Error("cuerpo demasiado grande");
+    if (largo > tope) throw new Error("cuerpo demasiado grande");
     partes.push(parte as Buffer);
   }
-  if (largo === 0) return {};
-  const v = JSON.parse(Buffer.concat(partes).toString("utf8")) as unknown;
+  return Buffer.concat(partes).toString("utf8");
+}
+
+async function leerCuerpo(req: http.IncomingMessage): Promise<Record<string, unknown>> {
+  const crudo = await leerCrudo(req, TOPE_CUERPO);
+  if (!crudo) return {};
+  const v = JSON.parse(crudo) as unknown;
   return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
 }
 
@@ -69,6 +75,18 @@ const servidor = http.createServer(async (req, res) => {
     if (req.method === "GET" && ruta === "/health") {
       return json(res, 200, { ok: true, whatsapp: estadoActual().status, enCola: eventosEnCola() });
     }
+    // El cerebro: el CRM firma cada despacho con la BOT_API_KEY (HMAC del cuerpo crudo).
+    if (req.method === "POST" && ruta === "/cerebro/despacho") {
+      const crudo = await leerCrudo(req, 1024 * 1024);
+      const firma = req.headers["x-vocero-signature"];
+      if (!firmaValida(crudo, Array.isArray(firma) ? firma[0] : firma)) {
+        return json(res, 401, { error: "Firma inválida" });
+      }
+      const evento = req.headers["x-vocero-event"];
+      recibirDespacho(JSON.parse(crudo) as unknown, Array.isArray(evento) ? evento[0] : evento);
+      return json(res, 200, { ok: true });
+    }
+
     if (!llaveValida(req)) return json(res, 401, { error: "No autorizado" });
 
     if (req.method === "GET" && ruta === "/estado") return json(res, 200, estadoActual());
@@ -84,17 +102,19 @@ const servidor = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && ruta === "/enviar") {
       const body = await leerCuerpo(req);
-      const to = numeroValido(body.to);
+      // Quien nunca mostró su teléfono tiene por «número» su `@lid`.
+      const to = numeroValido(body.to) ?? lidValido(body.to);
       const text = typeof body.text === "string" ? body.text : "";
       if (!to) return json(res, 400, { error: "Número inválido" });
       if (!text.trim() || text.length > TOPE_TEXTO) return json(res, 400, { error: "Texto vacío o demasiado largo" });
-      return json(res, 200, { id: await enviarTexto(to, text) });
+      const lid = lidValido(body.lid);
+      return json(res, 200, { id: await enviarTexto(to, text, lid) });
     }
 
     if (req.method === "POST" && ruta === "/escribiendo") {
       const body = await leerCuerpo(req);
-      const to = numeroValido(body.to);
-      if (to) await escribiendo(to);
+      const to = numeroValido(body.to) ?? lidValido(body.to);
+      if (to) await escribiendo(to, lidValido(body.lid));
       res.writeHead(204).end();
       return;
     }

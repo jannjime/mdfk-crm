@@ -51,3 +51,13 @@ test("utilidades", () => {
   assert.equal(idDeArchivoSeguro("3EB0ABC123"), "3EB0ABC123");
   assert.equal(idDeArchivoSeguro("../../etc/passwd"), null);
 });
+
+import { lidDe, numeroDeJidTelefono } from "./mensajes.ts";
+
+test("@lid y teléfono se distinguen", () => {
+  assert.equal(lidDe("107104455143661@lid"), "107104455143661");
+  assert.equal(lidDe("51987654321@s.whatsapp.net"), null);
+  assert.equal(numeroDeJidTelefono("51987654321@s.whatsapp.net"), "51987654321");
+  assert.equal(numeroDeJidTelefono("107104455143661@lid"), null);
+  assert.equal(numeroDeJidTelefono(undefined), null);
+});

@@ -27,7 +27,7 @@ describe("080 — WhatsApp por QR: eventos del puente", () => {
     const evt = normalizarEventoQr(base);
     expect(evt?.tipo).toBe("mensaje");
     const m = normalizarMensajeQr(evt as never)!;
-    expect(m).toMatchObject({ id: "ABC", phone: "51987654321", profileName: "Ana", type: "text", text: "Hola", timestamp: "1790000000" });
+    expect(m).toMatchObject({ id: "ABC", phone: "51987654321", lid: null, profileName: "Ana", type: "text", text: "Hola", timestamp: "1790000000" });
     expect(identidadQr(m)).toEqual({
       identity: "qr:51987654321",
       channel: "whatsapp_qr",
@@ -35,6 +35,23 @@ describe("080 — WhatsApp por QR: eventos del puente", () => {
       waUserId: null,
       profileName: "Ana",
     });
+  });
+
+  it("el @lid viaja en el contacto; un eco solo con @lid no inventa identidad", () => {
+    const conLid = normalizarEventoQr({ ...base, mensaje: { ...base.mensaje, lid: "107104455143661" } });
+    const m = normalizarMensajeQr(conLid as never)!;
+    expect(identidadQr(m)?.waUserId).toBe("lid:107104455143661");
+    const eco = normalizarEventoQr({
+      sesion: "org_1",
+      tipo: "eco",
+      mensaje: { id: "E1", numero: null, lid: "107104455143661", timestamp: 1, tipo: "text", texto: "Hola" },
+    });
+    const me = normalizarMensajeQr(eco as never)!;
+    expect(me).toMatchObject({ phone: null, lid: "107104455143661" });
+    expect(identidadQr(me)).toBeNull();
+    // Un mensaje del CLIENTE sin número no entra: siempre trae a quién.
+    const sinQuien = normalizarEventoQr({ ...base, mensaje: { ...base.mensaje, numero: null, lid: "123456" } });
+    expect(normalizarMensajeQr(sinQuien as never)).toBeNull();
   });
 
   it("descarta lo que no es del puente o no trae nada que guardar", () => {
@@ -78,6 +95,12 @@ describe("080 — WhatsApp por QR: el canal", () => {
     expect(urlDeAdjunto("a b")).toBe("http://mdfk_puente:3001/media/a%20b");
     expect(esDelPuente("http://mdfk_puente:3001/media/x")).toBe(true);
     expect(esDelPuente("http://169.254.169.254/latest")).toBe(false);
+  });
+
+  it("sin ventana: siempre abierta, aunque el cliente no haya escrito nunca", async () => {
+    const { isWindowOpen } = await import("@/server/inbox/window");
+    expect(isWindowOpen(null, new Date(), windowMsFor("whatsapp_qr"))).toBe(true);
+    expect(isWindowOpen(null, new Date(), windowMsFor("whatsapp"))).toBe(false);
   });
 
   it("sin ventana ni plantillas, formato de WhatsApp, y el cerebro lo ve como WhatsApp", () => {
